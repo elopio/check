@@ -1,6 +1,10 @@
 package check
 
-import "io"
+import (
+	"io"
+
+	"github.com/testing-cabal/subunit-go"
+)
 
 type Reporter interface {
 	reporter
@@ -20,4 +24,8 @@ func NewCheckReporter(writer io.Writer, stream, verbose bool) *checkReporter {
 
 func (c *C) FakeSkip(reason string) {
 	c.reason = reason
+}
+
+func NewTestSubunitReporter(streamer subunit.StreamResultToBytes) *subunitReporter {
+	return &subunitReporter{streamer: &streamer}
 }

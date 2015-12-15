@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/testing-cabal/subunit-go"
 )
 
 type reporter interface {
@@ -125,4 +127,76 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	pc := c.method.PC()
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
+}
+
+type subunitReporter struct {
+	streamer *subunit.StreamResultToBytes
+}
+
+func newSubunitReporter(writer io.Writer) *subunitReporter {
+	return &subunitReporter{
+		streamer: &subunit.StreamResultToBytes{Output: writer},
+	}
+}
+
+func (r *subunitReporter) Write(content []byte) (n int, err error) {
+	// XXX I'm not quite sure what to do with this write. Let's put it in details.
+	// That's not so good, because here we don't get the test name.
+	e := subunit.Event{
+		FileName:  "details",
+		FileBytes: content,
+		MIME:      "text/plain;charset=utf8",
+	}
+	err = r.streamer.Status(e)
+	if err == nil {
+		n = len(content)
+	}
+	return
+}
+
+func (r *subunitReporter) WriteStarted(c *C) {
+	r.streamer.Status(r.basicEvent(c, "inprogress"))
+}
+
+func (r *subunitReporter) basicEvent(c *C, status string) subunit.Event {
+	return subunit.Event{TestID: c.TestName(), Status: status}
+}
+
+func (r *subunitReporter) WriteFailure(c *C) {
+	e := r.basicEvent(c, "fail")
+	e.FileName = "details"
+	e.FileBytes = []byte(c.logb.String())
+	e.MIME = "text/plain;charset=utf8"
+	r.streamer.Status(e)
+}
+
+func (r *subunitReporter) WriteError(c *C) {
+	r.WriteFailure(c)
+}
+
+func (r *subunitReporter) WriteSuccess(c *C) {
+	r.streamer.Status(r.basicEvent(c, "success"))
+}
+
+func (r *subunitReporter) WriteSkip(c *C) {
+	e := r.basicEvent(c, "skip")
+	if c.reason != "" {
+		e.FileName = "reason"
+		e.FileBytes = []byte(c.reason)
+		e.MIME = "text/plain;charset=utf8"
+	}
+	r.streamer.Status(e)
+}
+
+func (r *subunitReporter) WriteExpectedFailure(c *C) {
+	r.streamer.Status(r.basicEvent(c, "xfail"))
+}
+
+func (r *subunitReporter) WriteMissed(c *C) {
+	// XXX maybe we can use the status 000 - undefined /no test for this.
+	r.streamer.Status(r.basicEvent(c, "undefined"))
+}
+
+func (r *subunitReporter) Stream() bool {
+	return true
 }

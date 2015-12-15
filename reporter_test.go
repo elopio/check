@@ -190,3 +190,11 @@ func (s *checkReporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag
 		c.Check(output.value, Equals, "")
 	}
 }
+
+var _ = Suite(&subunitReporterS{})
+
+type subunitReporterS struct{}
+
+type spyStreamResultToBytes struct {
+	subunit.StreamResultsToBytes
+}
