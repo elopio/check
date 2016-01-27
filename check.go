@@ -522,13 +522,12 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
-	stream                    bool
+	verbosity                 uint8
 }
 
 type RunConf struct {
 	Output        io.Writer
-	Stream        bool
-	Verbose       bool
+	Verbosity     uint8
 	Filter        string
 	Benchmark     bool
 	BenchmarkTime time.Duration // Defaults to 1 second
@@ -545,24 +544,24 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	if conf.Output == nil {
 		conf.Output = os.Stdout
 	}
-	if conf.Benchmark {
-		conf.Verbose = true
+	if conf.Benchmark && conf.Verbosity < 1 {
+		conf.Verbosity = 1
 	}
 
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
-
+	
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:    newOutputWriter(conf.Output, conf.Verbosity),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
-		stream:    conf.Stream,
+		verbosity: conf.Verbosity,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -643,7 +642,7 @@ func (runner *suiteRunner) run() *Result {
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
 	var logw io.Writer
-	if runner.stream {
+	if runner.verbosity > 1 {
 		logw = runner.output
 	}
 	if logb == nil {
