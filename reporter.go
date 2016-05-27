@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type testReporter interface {
+type TestReporter interface {
 	StartTest(*C)
 	StopTest(*C)
 	AddFailure(*C)
