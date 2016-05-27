@@ -520,7 +520,7 @@ type suiteRunner struct {
 	tempDir                   *tempDir
 	keepDir                   bool
 	logOutput                 io.Writer
-	reporter                  testReporter
+	reporter                  TestReporter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
@@ -529,6 +529,7 @@ type suiteRunner struct {
 
 type RunConf struct {
 	Output        io.Writer
+	Reporter      TestReporter
 	Stream        bool
 	Verbose       bool
 	Filter        string
@@ -561,11 +562,15 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	if conf.Stream {
 		verbosity = 2
 	}
+
+	if conf.Reporter == nil {
+		conf.Reporter = newOutputWriter(conf.Output, verbosity)
+	}
 	
 	runner := &suiteRunner{
 		suite:     suite,
 	  logOutput: conf.Output,
-		reporter:  newOutputWriter(conf.Output, verbosity),
+		reporter:  conf.Reporter,
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
