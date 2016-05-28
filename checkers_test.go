@@ -271,3 +271,190 @@ func (s *CheckersS) TestImplements(c *check.C) {
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, interface{}(nil))
 	testCheck(c, check.Implements, false, "", interface{}(nil), &e)
 }
+
+func (s *CheckersS) TestContainsUnsupportedTypes(c *check.C) {
+	testInfo(c, check.Contains, "Contains", []string{"container", "elem"})
+	testCheck(c, check.Contains, false, "int is not a supported container", 5, nil)
+	testCheck(c, check.Contains, false, "bool is not a supported container", false, nil)
+	testCheck(c, check.Contains, false, "element is a int but expected a string", "container", 1)
+}
+
+func (s *CheckersS) TestContainsVerifiesTypes(c *check.C) {
+	testInfo(c, check.Contains, "Contains", []string{"container", "elem"})
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		[...]int{1, 2, 3}, "foo")
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		[]int{1, 2, 3}, "foo")
+	// This looks tricky, Contains looks at _values_, not at keys
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		map[string]int{"foo": 1, "bar": 2}, "foo")
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		map[string]int{"foo": 1, "bar": 2}, "foo")
+}
+
+type animal interface {
+	Sound() string
+}
+
+type dog struct{}
+
+func (d *dog) Sound() string {
+	return "bark"
+}
+
+type cat struct{}
+
+func (c *cat) Sound() string {
+	return "meow"
+}
+
+type tree struct{}
+
+func (s *CheckersS) TestContainsVerifiesInterfaceTypes(c *check.C) {
+	testCheck(c, check.Contains,
+		false, "container has items of interface type check_test.animal but expected element does not implement it",
+		[...]animal{&dog{}, &cat{}}, &tree{})
+	testCheck(c, check.Contains,
+		false, "container has items of interface type check_test.animal but expected element does not implement it",
+		[]animal{&dog{}, &cat{}}, &tree{})
+	testCheck(c, check.Contains,
+		false, "container has items of interface type check_test.animal but expected element does not implement it",
+		map[string]animal{"dog": &dog{}, "cat": &cat{}}, &tree{})
+}
+
+func (s *CheckersS) TestContainsString(c *check.C) {
+	c.Assert("foo", check.Contains, "f")
+	c.Assert("foo", check.Contains, "fo")
+	c.Assert("foo", check.Not(check.Contains), "foobar")
+}
+
+type myString string
+
+func (s *CheckersS) TestContainsCustomString(c *check.C) {
+	c.Assert(myString("foo"), check.Contains, myString("f"))
+	c.Assert(myString("foo"), check.Contains, myString("fo"))
+	c.Assert(myString("foo"), check.Not(check.Contains), myString("foobar"))
+	c.Assert("foo", check.Contains, myString("f"))
+	c.Assert("foo", check.Contains, myString("fo"))
+	c.Assert("foo", check.Not(check.Contains), myString("foobar"))
+	c.Assert(myString("foo"), check.Contains, "f")
+	c.Assert(myString("foo"), check.Contains, "fo")
+	c.Assert(myString("foo"), check.Not(check.Contains), "foobar")
+}
+
+func (s *CheckersS) TestContainsArray(c *check.C) {
+	c.Assert([...]int{1, 2, 3}, check.Contains, 1)
+	c.Assert([...]int{1, 2, 3}, check.Contains, 2)
+	c.Assert([...]int{1, 2, 3}, check.Contains, 3)
+	c.Assert([...]int{1, 2, 3}, check.Not(check.Contains), 4)
+	c.Assert([...]animal{&dog{}, &cat{}}, check.Contains, &dog{})
+	c.Assert([...]animal{&cat{}}, check.Not(check.Contains), &dog{})
+}
+
+func (s *CheckersS) TestContainsSlice(c *check.C) {
+	c.Assert([]int{1, 2, 3}, check.Contains, 1)
+	c.Assert([]int{1, 2, 3}, check.Contains, 2)
+	c.Assert([]int{1, 2, 3}, check.Contains, 3)
+	c.Assert([]int{1, 2, 3}, check.Not(check.Contains), 4)
+	c.Assert([]animal{&dog{}, &cat{}}, check.Contains, &dog{})
+	c.Assert([]animal{&cat{}}, check.Not(check.Contains), &dog{})
+}
+
+func (s *CheckersS) TestContainsMap(c *check.C) {
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Contains, 1)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Contains, 2)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Not(check.Contains), 3)
+	c.Assert(map[string]animal{"dog": &dog{}, "cat": &cat{}}, check.Contains, &dog{})
+	c.Assert(map[string]animal{"cat": &cat{}}, check.Not(check.Contains), &dog{})
+}
+
+// Arbitrary type that is not comparable
+type myStruct struct {
+	attrs map[string]string
+}
+
+func (s *CheckersS) TestContainsUncomparableType(c *check.C) {
+	elem := myStruct{map[string]string{"k": "v"}}
+	containerArray := [...]myStruct{elem}
+	containerSlice := []myStruct{elem}
+	containerMap := map[string]myStruct{"foo": elem}
+	errMsg := "runtime error: comparing uncomparable type check_test.myStruct"
+	testInfo(c, check.Contains, "Contains", []string{"container", "elem"})
+	testCheck(c, check.Contains, false, errMsg, containerArray, elem)
+	testCheck(c, check.Contains, false, errMsg, containerSlice, elem)
+	testCheck(c, check.Contains, false, errMsg, containerMap, elem)
+}
+
+func (s *CheckersS) TestDeepContainsUnsupportedTypes(c *check.C) {
+	testInfo(c, check.DeepContains, "DeepContains", []string{"container", "elem"})
+	testCheck(c, check.DeepContains, false, "int is not a supported container", 5, nil)
+	testCheck(c, check.DeepContains, false, "bool is not a supported container", false, nil)
+	testCheck(c, check.DeepContains, false, "element is a int but expected a string", "container", 1)
+}
+
+func (s *CheckersS) TestDeepContainsVerifiesTypes(c *check.C) {
+	testInfo(c, check.DeepContains, "DeepContains", []string{"container", "elem"})
+	testCheck(c, check.DeepContains,
+		false, "container has items of type int but expected element is a string",
+		[...]int{1, 2, 3}, "foo")
+	testCheck(c, check.DeepContains,
+		false, "container has items of type int but expected element is a string",
+		[]int{1, 2, 3}, "foo")
+	// This looks tricky, DeepContains looks at _values_, not at keys
+	testCheck(c, check.DeepContains,
+		false, "container has items of type int but expected element is a string",
+		map[string]int{"foo": 1, "bar": 2}, "foo")
+}
+
+func (s *CheckersS) TestDeepContainsString(c *check.C) {
+	c.Assert("foo", check.DeepContains, "f")
+	c.Assert("foo", check.DeepContains, "fo")
+	c.Assert("foo", check.Not(check.DeepContains), "foobar")
+}
+
+func (s *CheckersS) TestDeepContainsCustomString(c *check.C) {
+	c.Assert(myString("foo"), check.DeepContains, myString("f"))
+	c.Assert(myString("foo"), check.DeepContains, myString("fo"))
+	c.Assert(myString("foo"), check.Not(check.DeepContains), myString("foobar"))
+	c.Assert("foo", check.DeepContains, myString("f"))
+	c.Assert("foo", check.DeepContains, myString("fo"))
+	c.Assert("foo", check.Not(check.DeepContains), myString("foobar"))
+	c.Assert(myString("foo"), check.DeepContains, "f")
+	c.Assert(myString("foo"), check.DeepContains, "fo")
+	c.Assert(myString("foo"), check.Not(check.DeepContains), "foobar")
+}
+
+func (s *CheckersS) TestDeepContainsArray(c *check.C) {
+	c.Assert([...]int{1, 2, 3}, check.DeepContains, 1)
+	c.Assert([...]int{1, 2, 3}, check.DeepContains, 2)
+	c.Assert([...]int{1, 2, 3}, check.DeepContains, 3)
+	c.Assert([...]int{1, 2, 3}, check.Not(check.DeepContains), 4)
+}
+
+func (s *CheckersS) TestDeepContainsSlice(c *check.C) {
+	c.Assert([]int{1, 2, 3}, check.DeepContains, 1)
+	c.Assert([]int{1, 2, 3}, check.DeepContains, 2)
+	c.Assert([]int{1, 2, 3}, check.DeepContains, 3)
+	c.Assert([]int{1, 2, 3}, check.Not(check.DeepContains), 4)
+}
+
+func (s *CheckersS) TestDeepContainsMap(c *check.C) {
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.DeepContains, 1)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.DeepContains, 2)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Not(check.DeepContains), 3)
+}
+
+func (s *CheckersS) TestDeepContainsUncomparableType(c *check.C) {
+	elem := myStruct{map[string]string{"k": "v"}}
+	containerArray := [...]myStruct{elem}
+	containerSlice := []myStruct{elem}
+	containerMap := map[string]myStruct{"foo": elem}
+	testInfo(c, check.DeepContains, "DeepContains", []string{"container", "elem"})
+	testCheck(c, check.DeepContains, true, "", containerArray, elem)
+	testCheck(c, check.DeepContains, true, "", containerSlice, elem)
+	testCheck(c, check.DeepContains, true, "", containerMap, elem)
+}
