@@ -6,6 +6,16 @@ type TestReporter interface {
 	testReporter
 }
 
+const (
+	StartTest       = startTest
+	Failure         = failure
+	Panicked        = panicked
+	Success         = success
+	ExpectedFailure = expectedFailure
+	Skip            = skip
+	Missed          = missed
+)
+
 func PrintLine(filename string, line int) (string, error) {
 	return printLine(filename, line)
 }

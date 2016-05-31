@@ -26,7 +26,7 @@ func (s *reporterS) TestStartTestWithHighVerbosity(c *C) {
 
 	o := NewOutputWriter(&output, verbosity)
 
-	o.StartTest(c)
+	o.Report(StartTest, c)
 	expected := fmt.Sprintf("START: %s:\\d+: %s\n", s.testFile, c.TestName())
 	c.Assert(output.value, Matches, expected)
 }
@@ -37,7 +37,7 @@ func (s *reporterS) TestStartTestLowVerbosity(c *C) {
 
 	o := NewOutputWriter(&output, verbosity)
 
-	o.StartTest(c)
+	o.Report(StartTest, c)
 	c.Assert(output.value, Equals, "")
 }
 
@@ -45,9 +45,9 @@ var problemTests = []string{"FAIL", "PANIC"}
 
 func addProblem(label string, r TestReporter, c *C) {
 	if label == "FAIL" {
-		r.AddFailure(c)
+		r.Report(Failure, c)
 	} else if label == "PANIC" {
-		r.AddError(c)
+		r.Report(Panicked, c)
 	} else {
 		panic("Unknown problem: " + label)
 	}
@@ -105,13 +105,13 @@ var successTests = []string{"PASS", "SKIP", "FAIL EXPECTED", "MISS"}
 
 func addSuccess(label string, r TestReporter, c *C) {
 	if label == "PASS" {
-		r.AddSuccess(c)
+		r.Report(Success, c)
 	} else if label == "SKIP" {
-		r.AddSkip(c)
+		r.Report(Skip, c)
 	} else if label == "FAIL EXPECTED" {
-		r.AddExpectedFailure(c)
+		r.Report(ExpectedFailure, c)
 	} else if label == "MISS" {
-		r.AddMissed(c)
+		r.Report(Missed, c)
 	} else {
 		panic("Unknown success: " + label)
 	}
