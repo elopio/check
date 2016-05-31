@@ -108,8 +108,8 @@ func (c *C) stopNow() {
 // logger is a concurrency safe byte.Buffer
 type logger struct {
 	sync.Mutex
-	buffer bytes.Buffer
-	output io.Writer
+	buffer    bytes.Buffer
+	output    io.Writer
 	verbosity uint8
 }
 
@@ -561,10 +561,10 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	if conf.Stream {
 		verbosity = 2
 	}
-	
+
 	runner := &suiteRunner{
 		suite:     suite,
-	  logOutput: conf.Output,
+		logOutput: conf.Output,
 		reporter:  newOutputWriter(conf.Output, verbosity),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,

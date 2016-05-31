@@ -57,7 +57,7 @@ func (s *reporterS) TestAddProblemWitHighVerbosity(c *C) {
 	for _, testLabel := range problemTests {
 		var verbosity uint8 = 2
 		output := String{}
-		
+
 		o := NewOutputWriter(&output, verbosity)
 
 		addProblem(testLabel, o, c)
@@ -72,7 +72,7 @@ func (s *reporterS) TestAddProblemWithLowVerbosity(c *C) {
 		output := String{}
 
 		o := NewOutputWriter(&output, verbosity)
-		
+
 		addProblem(testLabel, o, c)
 		expected := fmt.Sprintf(""+
 			"\n"+
