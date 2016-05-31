@@ -86,7 +86,7 @@ func (ow *outputWriter) AddSkip(c *C) {
 func (ow *outputWriter) AddMissed(c *C) {
 	ow.writeSuccess("MISS", c)
 }
-	
+
 func (ow *outputWriter) writeSuccess(label string, c *C) {
 	if ow.verbosity > 1 || (ow.verbosity == 1 && c.kind == testKd) {
 		// TODO Use a buffer here.
