@@ -853,7 +853,7 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
 }
 
 func (runner *suiteRunner) reportCallStarted(c *C) {
-	runner.reporter.StartTest(c)
+	runner.reporter.Report(startTest, c)
 }
 
 func (runner *suiteRunner) reportCallDone(c *C) {
@@ -861,23 +861,23 @@ func (runner *suiteRunner) reportCallDone(c *C) {
 	switch c.status() {
 	case succeededSt:
 		if c.mustFail {
-			runner.reporter.AddExpectedFailure(c)
+			runner.reporter.Report(expectedFailure, c)
 		} else {
-			runner.reporter.AddSuccess(c)
+			runner.reporter.Report(success, c)
 		}
 	case skippedSt:
-		runner.reporter.AddSkip(c)
+		runner.reporter.Report(skip, c)
 	case failedSt:
-		runner.reporter.AddFailure(c)
+		runner.reporter.Report(failure, c)
 	case panickedSt:
-		runner.reporter.AddError(c)
+		runner.reporter.Report(panicked, c)
 	case fixturePanickedSt:
 		// That's a testKd call reporting that its fixture
 		// has panicked. The fixture call which caused the
 		// panic itself was tracked above. We'll report to
 		// aid debugging.
-		runner.reporter.AddError(c)
+		runner.reporter.Report(panicked, c)
 	case missedSt:
-		runner.reporter.AddMissed(c)
+		runner.reporter.Report(missed, c)
 	}
 }
